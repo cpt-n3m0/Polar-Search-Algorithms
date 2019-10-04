@@ -34,4 +34,8 @@ public class State {
 		return false;
 	}
 	
+	public String toString()
+	{
+		return "(" + String.valueOf(this.d )+ "," + String.valueOf(this.angle) + ")";
+	}
 }
