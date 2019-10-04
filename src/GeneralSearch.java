@@ -42,21 +42,20 @@ public abstract class GeneralSearch {
 	}
 
 	private boolean inCollection(State s , Collection<Node> c) {
-		System.out.println("size : " + String.valueOf(c.size()) );
+		//System.out.println("size : " + String.valueOf(c.size()) );
 		for (Node n: c)
 		{
 			if(n.getState().equals(s))
 			{
-				System.out.print("Previously expanded ");
+				System.out.print(s.toString() + " exists ");
 				return true;
 			}	
 		}
-		System.out.println("nah");
 		return false;
 	}
 	public ArrayList<Node> expand(Node node) {
 		
-		System.out.print("Expanding : " + node.getState().toString() + "|");
+		System.out.println("Expanding : " + node.getState().toString() + ":");
 		ArrayList<Node> children = new ArrayList<Node>();
 		double pathCost = 0;
 		String action = "";
@@ -92,29 +91,19 @@ public abstract class GeneralSearch {
 					break;				
 			}
 
-			if (childState != null && this.isExplored(childState) == false && this.inCollection(childState, children) == false) {
-				
+			if (childState != null ) {
 				pathCost = this.cost(node.getState(), childState);
 				Node childNode = new Node(node, childState, action, node.getDepth() + 1, node.getPathCost() + pathCost);
 				children.add(childNode);
+				System.out.println(this.collectionString(children));
+
 			}
 		}
 		
-		System.out.println(this.collectionString(children));
+		//System.out.println(this.collectionString(children));
 		return children;
 	}
-	private boolean isExplored(State state)
-	{
-		for(Node n: this.explored)
-		{
-			if(n.getState().equals(state))
-			{
-				System.out.println(state.toString() + " already explored");
-				return true;
-			}
-		}
-		return false;
-	}
+	
 
 	private void printPath(Node goal)
 	{
@@ -154,6 +143,11 @@ public abstract class GeneralSearch {
 				System.out.println("Explored : " + this.collectionString(this.explored));
 			}
 			for (Node current: frontier) {
+				if(this.inCollection(current.getState(), this.explored))
+				{
+					remove++;
+					break;
+				}
 				if (frontier.isEmpty())
 				{
 					System.out.println("Search finished. Goal not found.");

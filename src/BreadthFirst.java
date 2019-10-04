@@ -17,11 +17,9 @@ public class BreadthFirst extends GeneralSearch{
 	}
 	@Override
 	ArrayList<Node> removeFromFrontier(int n) {
-		System.out.println(super.collectionString(super.frontier));
 		ArrayList<Node> explored = new ArrayList<Node>();
 		for(int i=0; i < n; i++)
 			explored.add(super.frontier.poll());
-		System.out.println(super.collectionString(super.frontier));
 
 		return explored;
 	}
