@@ -6,10 +6,7 @@ public class BreadthFirst extends GeneralSearch{
 	public BreadthFirst(int parallels) {
 		super(parallels);
 	}
-	@Override
-	double cost(State s1, State s2) { // path cost information irrelevant since it's an uninformed search
-		return 0;
-	}
+	
 	@Override
 	boolean isFrontierEmpty()
 	{
@@ -23,10 +20,20 @@ public class BreadthFirst extends GeneralSearch{
 
 		return explored;
 	}
+	@Override 
+	Node getNextNode()
+	{
+		return super.frontier.peek();
+	}
 	@Override
 	void addToFrontier(Node n)
 	{
 		super.frontier.offer(n);
+	}
+
+	@Override
+	Node makeNode(Node current, State nu, String action, State goal) {
+		return new Node(current, nu, action, current.getDepth() + 1, 0, 0, 0);
 	}
 	
 

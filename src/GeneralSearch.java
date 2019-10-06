@@ -11,7 +11,7 @@ public abstract class GeneralSearch {
 	protected ArrayDeque<Node> frontier;
 	private ArrayList<Node> explored;
 	private int parallels;
-	public boolean DEBUG = false;
+	public boolean DEBUG = true;
 	
 	
 	
@@ -22,10 +22,12 @@ public abstract class GeneralSearch {
 		this.parallels = parallels;
 	}
 	
-	abstract double cost(State s1, State s2);
+	abstract Node makeNode(Node current, State nu, String action, State goal);
 	abstract boolean isFrontierEmpty();
 	abstract ArrayList<Node> removeFromFrontier(int n);	
+	abstract Node getNextNode();
 	abstract void addToFrontier(Node n);
+	
 	private void addToFrontier(Collection<Node> nodes)
 	{
 		for (Node n: nodes) {
@@ -47,59 +49,87 @@ public abstract class GeneralSearch {
 		{
 			if(n.getState().equals(s))
 			{
-				System.out.print(s.toString() + " exists ");
+				System.out.println(s.toString() + " exists ");
 				return true;
 			}	
 		}
 		return false;
 	}
-	public ArrayList<Node> expand(Node node) {
-		
-		System.out.println("Expanding : " + node.getState().toString() + ":");
-		ArrayList<Node> children = new ArrayList<Node>();
-		double pathCost = 0;
-		String action = "";
+	public ArrayList<State> successor(Node node)
+	{
+		ArrayList<State> nextStates= new ArrayList<State>();
 		for(int i = 0; i < 4; i++)
 		{
 			State childState = null;
-			
 			switch(i)
 			{
 				case 0: // H360
 					if(node.getState().getD() - 1 > 0) {
 						childState= new State(node.getState().getD() - 1, node.getState().getAngle());	
-						action = "H360";
 					}
 					break;
 				case 1:// H180
 					if (node.getState().getD() + 1 < this.parallels) {
 						childState= new State(node.getState().getD() + 1, node.getState().getAngle());	
-						action = "H180";
 					}
 					break;
 				case 2: //H90
 					int t1 = node.getState().getAngle() + 45;
 					int childAngle90 = ( t1 == 360)? 0 : t1;
 					childState= new State(node.getState().getD(), childAngle90);
-					action = "H90";
 					break;
 				case 3: // H270
 					int t2 = node.getState().getAngle() - 45;
 					int childAngle270 = ( t2 == -45)? 315 : t2;
 					childState= new State(node.getState().getD(), childAngle270);
-					action = "H270";
-					break;				
+					break;			
+			
 			}
-
-			if (childState != null ) {
-				pathCost = this.cost(node.getState(), childState);
-				Node childNode = new Node(node, childState, action, node.getDepth() + 1, node.getPathCost() + pathCost);
-				children.add(childNode);
-				System.out.println(this.collectionString(children));
-
-			}
+			if(childState != null)
+				nextStates.add(childState);
 		}
+		return nextStates;
+	}
+	private String getAction(Node current, State child)
+	{
+		if(current.equals(child))
+			return "Goal reached";
+		int angleDiff = current.getState().getAngle() - child.getAngle();
+		int dDiff = current.getState().getD() - child.getD();
+		if( angleDiff == -45 || angleDiff == 315)
+			return "H90";
+		else if (angleDiff == 45 || angleDiff == -315)
+			return "H270";
+		else if( dDiff == 1)
+			return "H360";
+		else if(dDiff == -1)
+			return "H180";
 		
+		return "Illegal move";
+		
+	}
+	public ArrayList<Node> expand(Node node, State goal) {
+		
+		System.out.println("Expanding : " + node.getState().toString() + ":");
+		ArrayList<Node> children = new ArrayList<Node>();
+		ArrayList<State> childrenStates = successor(node);
+		
+		for(State childState: childrenStates)
+		{
+
+			if(this.inCollection(childState, this.explored))
+			{
+				continue;
+			}
+			if(this.inCollection(childState, this.frontier))
+			{
+				continue;
+			}
+			children.add(makeNode(node, childState, this.getAction(node, childState),  goal));
+		}
+			
+	
+
 		//System.out.println(this.collectionString(children));
 		return children;
 	}
@@ -131,24 +161,19 @@ public abstract class GeneralSearch {
 			System.out.println("Invalid coordinates");
 			return null;
 		}
-		Node root = new Node(null, start, "Start", 0, 0 );
+		Node root = new Node(null, start, "Start", 0, 0, 0, 0);
 		this.addToFrontier(root);
 		
 		while(true)
 		{
-			ArrayList<Node> expanded = new ArrayList<Node>();
-			int remove = 0;
-			if(DEBUG) {
-				System.out.println("Frontier : " + this.collectionString(this.frontier));
-				System.out.println("Explored : " + this.collectionString(this.explored));
-			}
-			for (Node current: frontier) {
+			
+			Node current =  this.getNextNode();
 				if(this.inCollection(current.getState(), this.explored))
 				{
-					remove++;
-					break;
+					this.removeFromFrontier(1);
+					continue;
 				}
-				if (frontier.isEmpty())
+				if (this.isFrontierEmpty())
 				{
 					System.out.println("Search finished. Goal not found.");
 					return null;
@@ -160,19 +185,22 @@ public abstract class GeneralSearch {
 					this.printPath(current);
 					return current;
 				}
-				expanded.addAll(this.expand(current));
 				if(DEBUG) {
 					System.out.println("current node : " + current.getState().toString());
 				}
-				remove++;
+			
+		
+			this.explored.add(current);
+			this.removeFromFrontier(1);
+			if(DEBUG) {
+				System.out.println("Frontier : " + this.collectionString(this.frontier));
+				System.out.println("Explored : " + this.collectionString(this.explored));
 			}
-			if (DEBUG) {
-				System.out.println("Expanded : " + this.collectionString(expanded));
-			}
-			this.explored.addAll(this.removeFromFrontier(remove));
-			this.addToFrontier(expanded);
+			this.addToFrontier(this.expand(current, goal));
+			
 		}
 	}
+
 	
 	
 	
