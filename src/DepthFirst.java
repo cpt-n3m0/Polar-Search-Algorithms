@@ -1,12 +1,14 @@
 import java.util.ArrayList;
-import java.util.Deque;
 
-public class BreadthFirst extends GeneralSearch{
-	
-	public BreadthFirst(int parallels) {
+public class DepthFirst extends GeneralSearch{
+	public DepthFirst(int parallels ) {
 		super(parallels);
 	}
-	
+	@Override
+	void reset() {
+		super.frontier.clear();
+		super.explored.clear();
+	}
 	@Override
 	boolean isFrontierEmpty()
 	{
@@ -28,19 +30,11 @@ public class BreadthFirst extends GeneralSearch{
 	@Override
 	void addToFrontier(Node n)
 	{
-		super.frontier.offer(n);
+		super.frontier.addFirst(n);
 	}
-
 	@Override
 	Node makeNode(Node current, State nu, String action, State goal) {
-		return new Node(current, nu, action, current.getDepth() + 1, 0, 0, 0);
-	}
-
-	@Override
-	void reset() {
-		super.frontier.clear();
-		super.explored.clear();
+		return new Node(current, nu, action, current.getDepth() + 1, 0 , 0, 0);
 	}
 	
-
 }

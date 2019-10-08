@@ -9,18 +9,16 @@ import java.lang.Math.*;
 
 public abstract class GeneralSearch {
 	protected ArrayDeque<Node> frontier;
-	private ArrayList<Node> explored;
-	private ArrayList<Node> noGoNodes;
+	protected ArrayList<Node> explored;
 	private int parallels;
 	public boolean DEBUG = true;
 	
 	
 	
-	public GeneralSearch(int parallels, ArrayList<Node> noGoNodes)
+	public GeneralSearch(int parallels)
 	{
 		frontier = new ArrayDeque<Node>(); 
 		explored = new ArrayList<Node>();
-		this.noGoNodes = noGoNodes;
 		this.parallels = parallels;
 	}
 	
@@ -29,6 +27,7 @@ public abstract class GeneralSearch {
 	abstract ArrayList<Node> removeFromFrontier(int n);	
 	abstract Node getNextNode();
 	abstract void addToFrontier(Node n);
+	abstract void reset();
 	
 	private void addToFrontier(Collection<Node> nodes)
 	{
@@ -51,7 +50,7 @@ public abstract class GeneralSearch {
 		{
 			if(n.getState().equals(s))
 			{
-				System.out.println(s.toString() + " exists ");
+				//System.out.println(s.toString() + " exists ");
 				return true;
 			}	
 		}
@@ -110,9 +109,9 @@ public abstract class GeneralSearch {
 		return "Illegal move";
 		
 	}
-	public ArrayList<Node> expand(Node node, State goal) {
-		
-		System.out.println("Expanding : " + node.getState().toString() + ":");
+	public ArrayList<Node> expand(Node node, State goal, ArrayList<Node> noGoNodes) {
+		if(this.DEBUG)
+			System.out.println("Expanding : " + node.getState().toString() + ":");
 		ArrayList<Node> children = new ArrayList<Node>();
 		ArrayList<State> childrenStates = successor(node);
 		
@@ -123,7 +122,7 @@ public abstract class GeneralSearch {
 				continue;
 			if(this.inCollection(childState, this.frontier))
 				continue;
-			if(this.inCollection(childState, this.noGoNodes))
+			if(this.inCollection(childState, noGoNodes))
 				continue;
 			children.add(makeNode(node, childState, this.getAction(node, childState),  goal));
 		}
@@ -135,27 +134,9 @@ public abstract class GeneralSearch {
 	}
 	
 
-	private void printPath(Node goal)
-	{
-		ArrayList<String> path = new ArrayList<String>();
-		double pathCost = 0;
-		Node current = goal;
-		do
-		{
-			path.add(current.getAction());
-			pathCost += current.getPathCost();
-			current = current.getParent();
-		}
-		while(current != null);
-		Collections.reverse(path);
-		for(String action: path)
-		{
-			System.out.println(action);
-		}
-		System.out.println("Path Cost: " + String.valueOf(pathCost) );
-	}
 	
-	public Node search(State start, State goal) {
+	
+	public Node search(State start, State goal, ArrayList<Node> noGoNodes) {
 		if (start.getD() == 0 || goal.getD() == 0 
 				|| start.getD() > this.parallels - 1 || goal.getD() > this.parallels - 1 
 				|| start.getAngle() % 45 != 0 || goal.getAngle() % 45 != 0 )
@@ -169,22 +150,21 @@ public abstract class GeneralSearch {
 		while(true)
 		{
 			
-			Node current =  this.getNextNode();
+				if (this.isFrontierEmpty())
+				{
+					return null;
+				}
+			
+			    Node current =  this.getNextNode();
+			   
 				if(this.inCollection(current.getState(), this.explored))
 				{
 					this.removeFromFrontier(1);
 					continue;
 				}
-				if (this.isFrontierEmpty())
-				{
-					System.out.println("Search finished. Goal not found.");
-					return null;
-				}
 				
 				if (current.getState().equals(goal))
 				{
-					System.out.println("Goal reached!");
-					this.printPath(current);
 					return current;
 				}
 				if(DEBUG) {
@@ -198,11 +178,10 @@ public abstract class GeneralSearch {
 				System.out.println("Frontier : " + this.collectionString(this.frontier));
 				System.out.println("Explored : " + this.collectionString(this.explored));
 			}
-			this.addToFrontier(this.expand(current, goal));
+			this.addToFrontier(this.expand(current, goal, noGoNodes));
 			
 		}
 	}
-
 	
 	
 	
