@@ -3,8 +3,8 @@ import java.util.Deque;
 
 public class BreadthFirst extends GeneralSearch{
 	
-	public BreadthFirst(int parallels) {
-		super(parallels);
+	public BreadthFirst(int parallels, ArrayList<Node> noGoNodes) {
+		super(parallels, noGoNodes);
 	}
 	
 	@Override

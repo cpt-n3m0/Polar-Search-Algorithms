@@ -10,15 +10,17 @@ import java.lang.Math.*;
 public abstract class GeneralSearch {
 	protected ArrayDeque<Node> frontier;
 	private ArrayList<Node> explored;
+	private ArrayList<Node> noGoNodes;
 	private int parallels;
 	public boolean DEBUG = true;
 	
 	
 	
-	public GeneralSearch(int parallels)
+	public GeneralSearch(int parallels, ArrayList<Node> noGoNodes)
 	{
 		frontier = new ArrayDeque<Node>(); 
 		explored = new ArrayList<Node>();
+		this.noGoNodes = noGoNodes;
 		this.parallels = parallels;
 	}
 	
@@ -80,7 +82,7 @@ public abstract class GeneralSearch {
 					break;
 				case 3: // H270
 					int t2 = node.getState().getAngle() - 45;
-					int childAngle270 = ( t2 == -45)? 315 : t2;
+					int childAngle270 = ( t2 < 0)? 315 : t2;
 					childState= new State(node.getState().getD(), childAngle270);
 					break;			
 			
@@ -118,13 +120,11 @@ public abstract class GeneralSearch {
 		{
 
 			if(this.inCollection(childState, this.explored))
-			{
 				continue;
-			}
 			if(this.inCollection(childState, this.frontier))
-			{
 				continue;
-			}
+			if(this.inCollection(childState, this.noGoNodes))
+				continue;
 			children.add(makeNode(node, childState, this.getAction(node, childState),  goal));
 		}
 			
@@ -156,7 +156,9 @@ public abstract class GeneralSearch {
 	}
 	
 	public Node search(State start, State goal) {
-		if (start.getD() == 0 || goal.getD() == 0 || start.getD() > this.parallels - 1 || goal.getD() > this.parallels - 1 )
+		if (start.getD() == 0 || goal.getD() == 0 
+				|| start.getD() > this.parallels - 1 || goal.getD() > this.parallels - 1 
+				|| start.getAngle() % 45 != 0 || goal.getAngle() % 45 != 0 )
 		{
 			System.out.println("Invalid coordinates");
 			return null;
