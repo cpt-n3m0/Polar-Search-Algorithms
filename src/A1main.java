@@ -20,7 +20,7 @@ public class A1main {
 	}
 
 	public static void main(String[] args) {
-
+		System.out.println("Starting ..");
 		String method = "";
 		int parallels = 0;
 		int pos = 0;
@@ -55,7 +55,9 @@ public class A1main {
 		}
 
 		
-		GeneralSearch s;
+		GeneralSearch s = null;
+		Bidirectional bs = null;
+		boolean isBs = false;
 		switch (method) {
 		case "DFS":
 			s = new DepthFirst(parallels);
@@ -69,17 +71,30 @@ public class A1main {
 		case "BestFirst":
 			s = new BestFirst(parallels);
 			break;
+		case  "Bidirectional":
+			bs = new Bidirectional(parallels);
+			isBs = true;
+			break;
 		default:
 			System.out.println("Unrecognised Method");
 			return;
 		}
-		s.DEBUG = false;
+
+		//s.DEBUG = false;
 		ArrayList<Node> noGoNodes = new ArrayList<Node>();
 		do
 		{
 			Flight flight = flights.poll();
+
 			System.out.println(flight.toString() );
-			flight.setFlightPath(s.search(flight.getStart(), flight.getGoal(), noGoNodes));
+			if(isBs) {
+				flight.setFlightPath(bs.search(flight.getStart(), flight.getGoal(), noGoNodes));
+				bs.reset();
+			}
+			else {
+				flight.setFlightPath(s.search(flight.getStart(), flight.getGoal(), noGoNodes));
+				s.reset();
+			}
 			if(flight.getFlightPath() == null)
 			{
 				System.out.println("No route found.");
@@ -88,7 +103,7 @@ public class A1main {
 			
 			flight.printPath();
 			noGoNodes.addAll(flight.getFlightPath());
-			s.reset();
+
 			System.out.println("---------------------------");
 		}
 		while(flights.isEmpty() == false);

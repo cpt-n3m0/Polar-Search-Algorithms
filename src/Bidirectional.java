@@ -1,4 +1,4 @@
-import java.util.ArrayDeque;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.PriorityQueue;
@@ -8,7 +8,7 @@ public class Bidirectional {
     private PriorityQueue<Node> gFrontier; // frontier form goal side
     protected ArrayList<Node> explored;
     private int parallels;
-    public boolean DEBUG = true;
+    public boolean DEBUG = false;
 
 
 
@@ -16,14 +16,15 @@ public class Bidirectional {
     {
         sFrontier= new PriorityQueue<Node>(new AstarComparator());
         gFrontier= new PriorityQueue<Node>(new AstarComparator());
-        explored = new ArrayList<Node>();
+        this.explored = new ArrayList<Node>();
         this.parallels = parallels;
     }
 
 
     void reset() {
-        this.frontier.clear();
-        super.explored.clear();
+        this.gFrontier.clear();
+        this.sFrontier.clear();
+        this.explored.clear();
     }
 
     private double hCost(State s1, State goal) {
@@ -47,31 +48,31 @@ public class Bidirectional {
         return new Node(current, nu, action, current.getDepth() + 1, pCost, hCost, pCost + hCost );
     }
 
-    boolean isFrontierEmpty()
+    boolean isFrontierEmpty(PriorityQueue<Node> frontier)
     {
-        return this.frontier.isEmpty();
+        return frontier.isEmpty();
     }
-    ArrayList<Node> removeFromFrontier(int n) {
+    ArrayList<Node> removeFromFrontier(PriorityQueue<Node> frontier, int n) {
         ArrayList<Node> explored = new ArrayList<Node>();
         for(int i=0; i < n; i++)
             explored.add(frontier.poll());
 
         return explored;
     }
-    Node getNextNode()
+    Node getNextNode(PriorityQueue<Node> frontier)
     {
-        return this.frontier.peek();
+        return frontier.peek();
     }
     
-    void addToFrontier(Node n)
+    void addToFrontier(PriorityQueue<Node> frontier, Node n)
     {
-        this.frontier.add(n);
+        frontier.add(n);
 
     }
-    private void addToFrontier(Collection<Node> nodes)
+    private void addToFrontier(PriorityQueue<Node> frontier, Collection<Node> nodes)
     {
         for (Node n: nodes) {
-            this.addToFrontier(n);
+            this.addToFrontier(frontier, n);
         }
     }
     protected String collectionString(Collection<Node> ns)
@@ -148,7 +149,7 @@ public class Bidirectional {
         return "Illegal move";
 
     }
-    public ArrayList<Node> expand(Node node, State goal, ArrayList<Node> noGoNodes) {
+    public ArrayList<Node> expand(PriorityQueue<Node> activeFront, Node node, State goal, ArrayList<Node> noGoNodes) {
         if(this.DEBUG)
             System.out.println("Expanding : " + node.getState().toString() + ":");
         ArrayList<Node> children = new ArrayList<Node>();
@@ -159,7 +160,7 @@ public class Bidirectional {
 
             if(this.inCollection(childState, this.explored))
                 continue;
-            if(this.inCollection(childState, this.frontier))
+            if(this.inCollection(childState, activeFront))
                 continue;
             if(this.inCollection(childState, noGoNodes))
                 continue;
@@ -173,51 +174,94 @@ public class Bidirectional {
     }
 
 
+    private Node checkIntersection(Collection<Node> searchFront, Node node){
+        for(Node n: searchFront)
+        {
+            if(n.equals(node))
+                return n;
+        }
+        return null;
+    }
 
+    private Node stitchUpPaths(Node startSideCrossNode, Node goalSideCrossNode) // links the two paths and corrects the actions starting from start state
+    {
+        Node current = goalSideCrossNode;
+        Node lastNode = startSideCrossNode.getParent();
+        while (current != null)
+        {
+            Node parent = current.getParent();
+            current.setParent(lastNode);
+            current.setAction(this.getAction(lastNode, current.getState()));
+            lastNode = current;
+            current = parent;
+
+        }
+
+        return lastNode;
+
+    }
 
     public Node search(State start, State goal, ArrayList<Node> noGoNodes) {
         if (start.getD() == 0 || goal.getD() == 0
                 || start.getD() > this.parallels - 1 || goal.getD() > this.parallels - 1
-                || start.getAngle() % 45 != 0 || goal.getAngle() % 45 != 0 )
-        {
+                || start.getAngle() % 45 != 0 || goal.getAngle() % 45 != 0) {
             System.out.println("Invalid coordinates");
             return null;
         }
-        Node root = new Node(null, start, "Start", 0, 0, 0, 0);
-        this.addToFrontier(root);
+        Node[] outPath = new Node[2];
+        Node startRoot = new Node(null, start, "Start", 0, 0, 0, 0);
+        Node goalRoot = new Node(null, goal, "Goal", 0, 0, 0, 0);
+        this.addToFrontier(sFrontier, startRoot);
+        this.addToFrontier(gFrontier, goalRoot);
+        int t = 0; // keeps track of which side we're on (0: start side, 1: goal side)
 
-        while(true)
-        {
 
-            if (this.isFrontierEmpty())
-            {
+        while (true) {
+
+            PriorityQueue activeFrontier;
+            if (this.isFrontierEmpty(this.gFrontier) && this.isFrontierEmpty(this.sFrontier)) {
                 return null;
             }
 
-            Node current =  this.getNextNode();
+            if (this.sFrontier.size() <= this.gFrontier.size()) { // cardinality based switching
+                activeFrontier = this.sFrontier;
+                t = 0;
+            } else {
+                activeFrontier = this.gFrontier;
+                t = 1;
+            }
+            Node current = this.getNextNode(activeFrontier);
 
-            if(this.inCollection(current.getState(), this.explored))
-            {
-                this.removeFromFrontier(1);
+            PriorityQueue<Node> crossSearchFront = (t == 0) ? this.gFrontier : this.sFrontier; // if we're on start side then search if node exists in goal side frontier and vice versa
+            Node searchResult = this.checkIntersection(crossSearchFront, current);
+            if (searchResult != null) {
+                System.out.println("Quick Path found ! Crossing at " + searchResult.getState().toString());
+                return (t == 0)? this.stitchUpPaths(current, searchResult): this.stitchUpPaths(searchResult, current); // make sure we always return the path so that we go from start to goal and not the other way round
+            }
+            if ((t == 0 && current.getState().equals(goal)) || (t == 1 && current.getState().equals(start))) {
+                System.out.println("Goal reached, standard search");
+                return current;
+            }
+            if (this.inCollection(current.getState(), this.explored)) {
+                this.removeFromFrontier(activeFrontier, 1);
                 continue;
             }
 
-            if (current.getState().equals(goal))
-            {
-                return current;
-            }
-            if(DEBUG) {
+
+            if (DEBUG) {
                 System.out.println("current node : " + current.getState().toString());
             }
 
 
             this.explored.add(current);
-            this.removeFromFrontier(1);
-            if(DEBUG) {
-                System.out.println("Frontier : " + this.collectionString(this.frontier));
+            this.removeFromFrontier(activeFrontier, 1);
+            if (DEBUG) {
+                System.out.println("Start side Frontier : " + this.collectionString(this.sFrontier));
+                System.out.println("Goal side Frontier : " + this.collectionString(this.gFrontier));
                 System.out.println("Explored : " + this.collectionString(this.explored));
             }
-            this.addToFrontier(this.expand(current, goal, noGoNodes));
+            this.addToFrontier(activeFrontier, this.expand(activeFrontier, current, goal, noGoNodes));
 
         }
+    }
 }
