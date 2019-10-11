@@ -40,8 +40,8 @@ public class Flight {
 
 	public void printPath() {
 		for (Node n : this.flightPath)
-			System.out.println(n.getAction() + " : " + n.getState().toString());
-		System.out.println("Goal");
+			System.out.print(n.getAction() + ",");
+		System.out.println("");
 	}
 
 	public void setFlightPath(Node goal) {
@@ -57,7 +57,15 @@ public class Flight {
 	public int getPriority() {
 		return priority;
 	}
-
+	public double getPathCost()
+	{
+		
+		return this.flightPath.get(this.flightPath.size() -1 ).getPathCost();
+	}
+	public int getPathLength()
+	{
+		return this.flightPath.size();
+	}
 	public void setPriority(int priority) {
 		this.priority = priority;
 	}

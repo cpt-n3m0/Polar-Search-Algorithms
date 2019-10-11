@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.PriorityQueue;
 
 public class A1main {
@@ -6,21 +7,30 @@ public class A1main {
 	private static Flight getFlightInfo(int pos, String[] args)
 	{
 		Flight flight = null;
-		
-			if (pos + 2 >= args.length)
+		boolean singleFlight = false;
+			if(pos >= args.length)
 				return null;
+			if (pos + 2 >= args.length && args.length != 4)
+				return null;
+			else
+				singleFlight = true;
 			String[] startCoords = args[pos].split(",");
 			String[] goalCoords = args[pos + 1].split(",");
 			State start = new State(Integer.valueOf(startCoords[0]), Integer.valueOf(startCoords[1]));
 			State goal = new State(Integer.valueOf(goalCoords[0]), Integer.valueOf(goalCoords[1]));
 
-			flight = new Flight(start, goal, Integer.valueOf(args[pos + 2]));
-		
+			if(singleFlight)
+				flight = new Flight(start, goal, 0);
+			else 
+				flight = new Flight(start, goal, Integer.valueOf(args[pos + 2]));
+			
 		return flight;
 	}
 
 	public static void main(String[] args) {
-		System.out.println("Starting ..");
+		boolean DEBUG = true;
+		Date date = new Date();
+		
 		String method = "";
 		int parallels = 0;
 		int pos = 0;
@@ -45,8 +55,8 @@ public class A1main {
 				break;
 			default:
 				Flight f = getFlightInfo(pos, args);
-				
-			    if (f == null) break;
+			        if (f == null) break;
+				//if(args.length == 4) f.setPriority(Integer.ValueOf(0)) = 0;
 		
 				flights.add(f);
 				pos += 3;
@@ -80,13 +90,13 @@ public class A1main {
 			return;
 		}
 
-		//s.DEBUG = false;
 		ArrayList<Node> noGoNodes = new ArrayList<Node>();
 		do
 		{
+			long strtTime = date.getTime();
 			Flight flight = flights.poll();
-
-			System.out.println(flight.toString() );
+			if(DEBUG)
+				System.out.println(flight.toString());
 			if(isBs) {
 				flight.setFlightPath(bs.search(flight.getStart(), flight.getGoal(), noGoNodes));
 				bs.reset();
@@ -102,9 +112,15 @@ public class A1main {
 			}
 			
 			flight.printPath();
+			if(DEBUG)
+			{
+	
+				System.out.println("Search duration: " + String.valueOf((new Date()).getTime() - strtTime));
+				System.out.println("Flight path cost: " + String.valueOf(flight.getPathCost()));
+				System.out.println("path length: "  + flight.getPathLength());
+			}
 			noGoNodes.addAll(flight.getFlightPath());
 
-			System.out.println("---------------------------");
 		}
 		while(flights.isEmpty() == false);
 

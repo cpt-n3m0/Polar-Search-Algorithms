@@ -8,7 +8,7 @@ public class Bidirectional {
     private PriorityQueue<Node> gFrontier; // frontier form goal side
     protected ArrayList<Node> explored;
     private int parallels;
-    public boolean DEBUG = false;
+    public boolean DEBUG = true;
 
 
 
@@ -134,7 +134,7 @@ public class Bidirectional {
     private String getAction(Node current, State child)
     {
         if(current.equals(child))
-            return "Goal reached";
+            return "Goal";
         int angleDiff = current.getState().getAngle() - child.getAngle();
         int dDiff = current.getState().getD() - child.getD();
         if( angleDiff == -45 || angleDiff == 315)
@@ -150,8 +150,7 @@ public class Bidirectional {
 
     }
     public ArrayList<Node> expand(PriorityQueue<Node> activeFront, Node node, State goal, ArrayList<Node> noGoNodes) {
-        if(this.DEBUG)
-            System.out.println("Expanding : " + node.getState().toString() + ":");
+       
         ArrayList<Node> children = new ArrayList<Node>();
         ArrayList<State> childrenStates = successor(node);
 
@@ -167,7 +166,9 @@ public class Bidirectional {
             children.add(makeNode(node, childState, this.getAction(node, childState),  goal));
         }
 
-
+    	
+		if(this.DEBUG)
+			System.out.println("Expanded : " + this.collectionString(children));
 
         //System.out.println(this.collectionString(children));
         return children;
@@ -208,7 +209,6 @@ public class Bidirectional {
             System.out.println("Invalid coordinates");
             return null;
         }
-        Node[] outPath = new Node[2];
         Node startRoot = new Node(null, start, "Start", 0, 0, 0, 0);
         Node goalRoot = new Node(null, goal, "Goal", 0, 0, 0, 0);
         this.addToFrontier(sFrontier, startRoot);
@@ -218,7 +218,7 @@ public class Bidirectional {
 
         while (true) {
 
-            PriorityQueue activeFrontier;
+            PriorityQueue<Node> activeFrontier;
             if (this.isFrontierEmpty(this.gFrontier) && this.isFrontierEmpty(this.sFrontier)) {
                 return null;
             }
@@ -235,11 +235,9 @@ public class Bidirectional {
             PriorityQueue<Node> crossSearchFront = (t == 0) ? this.gFrontier : this.sFrontier; // if we're on start side then search if node exists in goal side frontier and vice versa
             Node searchResult = this.checkIntersection(crossSearchFront, current);
             if (searchResult != null) {
-                System.out.println("Quick Path found ! Crossing at " + searchResult.getState().toString());
                 return (t == 0)? this.stitchUpPaths(current, searchResult): this.stitchUpPaths(searchResult, current); // make sure we always return the path so that we go from start to goal and not the other way round
             }
             if ((t == 0 && current.getState().equals(goal)) || (t == 1 && current.getState().equals(start))) {
-                System.out.println("Goal reached, standard search");
                 return current;
             }
             if (this.inCollection(current.getState(), this.explored)) {
@@ -259,6 +257,7 @@ public class Bidirectional {
                 System.out.println("Start side Frontier : " + this.collectionString(this.sFrontier));
                 System.out.println("Goal side Frontier : " + this.collectionString(this.gFrontier));
                 System.out.println("Explored : " + this.collectionString(this.explored));
+				System.out.println("Number of explored nodes: " + String.valueOf(this.explored.size()));
             }
             this.addToFrontier(activeFrontier, this.expand(activeFrontier, current, goal, noGoNodes));
 

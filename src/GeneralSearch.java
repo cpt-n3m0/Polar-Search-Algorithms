@@ -110,8 +110,7 @@ public abstract class GeneralSearch {
 		
 	}
 	public ArrayList<Node> expand(Node node, State goal, ArrayList<Node> noGoNodes) {
-		if(this.DEBUG)
-			System.out.println("Expanding : " + node.getState().toString() + ":");
+		
 		ArrayList<Node> children = new ArrayList<Node>();
 		ArrayList<State> childrenStates = successor(node);
 		
@@ -127,8 +126,9 @@ public abstract class GeneralSearch {
 			children.add(makeNode(node, childState, this.getAction(node, childState),  goal));
 		}
 			
-	
-
+		
+		if(this.DEBUG)
+			System.out.println("Expanded : " + this.collectionString(children));
 		//System.out.println(this.collectionString(children));
 		return children;
 	}
@@ -167,16 +167,17 @@ public abstract class GeneralSearch {
 				{
 					return current;
 				}
-				if(DEBUG) {
+				if(this.DEBUG) {
 					System.out.println("current node : " + current.getState().toString());
 				}
 			
 		
 			this.explored.add(current);
 			this.removeFromFrontier(1);
-			if(DEBUG) {
+			if(this.DEBUG) {
 				System.out.println("Frontier : " + this.collectionString(this.frontier));
 				System.out.println("Explored : " + this.collectionString(this.explored));
+				System.out.println("Number of explored nodes: " + String.valueOf(this.explored.size()));
 			}
 			this.addToFrontier(this.expand(current, goal, noGoNodes));
 			
